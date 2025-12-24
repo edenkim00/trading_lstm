@@ -1,0 +1,55 @@
+# 백테스트 설정
+backtest:
+  # 기본 파라미터
+  initial_capital: 10000.0
+  currency: USDT
+  
+  # 거래 비용
+  fees:
+    maker: 0.001  # 0.1%
+    taker: 0.001  # 0.1%
+    
+  # 슬리피지 모델
+  slippage:
+    type: fixed  # fixed, proportional, volume_based
+    bps: 5  # 0.05%
+    
+  # 포지션 관리
+  position:
+    sizing_method: fixed_percent  # fixed_percent, kelly, volatility_based
+    risk_per_trade: 0.02  # 거래당 리스크 (자본의 2%)
+    max_position_size: 1.0  # 최대 포지션 (자본의 100%)
+    leverage: 1  # 레버리지
+    allow_short: true  # 공매도 허용 여부
+    
+  # 리스크 관리
+  risk_management:
+    stop_loss:
+      enabled: true
+      type: percent  # percent, atr, trailing
+      value: 0.05  # 5% 손절
+    take_profit:
+      enabled: true
+      type: percent
+      value: 0.10  # 10% 익절
+    max_drawdown_stop: 0.20  # 20% 최대 손실시 중단
+    daily_loss_limit: 0.05  # 일일 최대 손실
+    
+  # 거래 제한
+  trading_rules:
+    min_hold_period: 1  # 최소 보유 기간 (bars)
+    cooldown_period: 0  # 손절 후 대기 기간 (bars)
+    max_trades_per_day: 10
+    trading_hours: null  # 24/7 (제한 없음)
+    
+  # 백테스트 실행
+  execution:
+    mode: vectorized  # vectorized 또는 event_driven
+    start_date: "2025-11-01"
+    end_date: "2025-12-30"
+    warmup_bars: 100  # 전략 준비 기간
+    
+  # 벤치마크
+  benchmark:
+    type: buy_and_hold
+    symbol: BTCUSDT
