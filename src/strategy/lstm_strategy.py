@@ -207,6 +207,7 @@ class LSTMStrategy(Strategy):
                     confidence = abs(expected_return)
                 else:
                     side = 'flat'
+                    confidence = abs(expected_return)
             else:
                 # 분류: 확률 기반
                 prob = float(pred)

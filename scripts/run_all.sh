@@ -38,67 +38,67 @@ cd "$(dirname "$0")/.."
 PROJECT_ROOT=$(pwd)
 
 # 가상환경 활성화
-if [ ! -d "venv" ]; then
-    echo -e "${RED}❌ 가상환경을 찾을 수 없습니다. 먼저 'python -m venv venv'를 실행하세요.${NC}"
-    exit 1
-fi
+# if [ ! -d "venv" ]; then
+#     echo -e "${RED}❌ 가상환경을 찾을 수 없습니다. 먼저 'python -m venv venv'를 실행하세요.${NC}"
+#     exit 1
+# fi
 
-echo -e "${YELLOW}🔧 가상환경 활성화...${NC}"
-source venv/bin/activate
+# echo -e "${YELLOW}🔧 가상환경 활성화...${NC}"
+# source venv/bin/activate
 
-# 1. 학습 데이터 다운로드
-echo -e "\n${BLUE}============================================================${NC}"
-echo -e "${YELLOW}📥 Step 1/4: 학습 데이터 다운로드${NC}"
-echo -e "${BLUE}============================================================${NC}"
+# # 1. 학습 데이터 다운로드
+# echo -e "\n${BLUE}============================================================${NC}"
+# echo -e "${YELLOW}📥 Step 1/4: 학습 데이터 다운로드${NC}"
+# echo -e "${BLUE}============================================================${NC}"
 
-python scripts/download_data.py \
-    --symbol "$SYMBOL" \
-    --interval "$INTERVAL" \
-    --start "$TRAIN_START" \
-    --end "$TRAIN_END" \
-    --force
+# python scripts/download_data.py \
+#     --symbol "$SYMBOL" \
+#     --interval "$INTERVAL" \
+#     --start "$TRAIN_START" \
+#     --end "$TRAIN_END" \
+#     --force
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ 학습 데이터 다운로드 실패${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ 학습 데이터 다운로드 완료${NC}"
+# if [ $? -ne 0 ]; then
+#     echo -e "${RED}❌ 학습 데이터 다운로드 실패${NC}"
+#     exit 1
+# fi
+# echo -e "${GREEN}✅ 학습 데이터 다운로드 완료${NC}"
 
-# 2. 백테스트 데이터 다운로드
-echo -e "\n${BLUE}============================================================${NC}"
-echo -e "${YELLOW}📥 Step 2/4: 백테스트 데이터 다운로드 (Out-of-Sample)${NC}"
-echo -e "${BLUE}============================================================${NC}"
+# # 2. 백테스트 데이터 다운로드
+# echo -e "\n${BLUE}============================================================${NC}"
+# echo -e "${YELLOW}📥 Step 2/4: 백테스트 데이터 다운로드 (Out-of-Sample)${NC}"
+# echo -e "${BLUE}============================================================${NC}"
 
-python scripts/download_data.py \
-    --symbol "$SYMBOL" \
-    --interval "$INTERVAL" \
-    --start "$TEST_START" \
-    --end "$TEST_END"
+# python scripts/download_data.py \
+#     --symbol "$SYMBOL" \
+#     --interval "$INTERVAL" \
+#     --start "$TEST_START" \
+#     --end "$TEST_END"
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ 백테스트 데이터 다운로드 실패${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ 백테스트 데이터 다운로드 완료${NC}"
+# if [ $? -ne 0 ]; then
+#     echo -e "${RED}❌ 백테스트 데이터 다운로드 실패${NC}"
+#     exit 1
+# fi
+# echo -e "${GREEN}✅ 백테스트 데이터 다운로드 완료${NC}"
 
-# 3. 모델 학습
-echo -e "\n${BLUE}============================================================${NC}"
-echo -e "${YELLOW}🧠 Step 3/4: LSTM 모델 학습 (Train+Val)${NC}"
-echo -e "${BLUE}============================================================${NC}"
+# # 3. 모델 학습
+# echo -e "\n${BLUE}============================================================${NC}"
+# echo -e "${YELLOW}🧠 Step 3/4: LSTM 모델 학습 (Train+Val)${NC}"
+# echo -e "${BLUE}============================================================${NC}"
 
-python scripts/train_model.py \
-    --symbol "$SYMBOL" \
-    --interval "$INTERVAL" \
-    --config configs/strategy.yaml \
-    --features-config configs/features.yaml \
-    --model-path "models/lstm/model.pth" \
-    --scaler-path "models/lstm/scaler.pkl"
+# python scripts/train_model.py \
+#     --symbol "$SYMBOL" \
+#     --interval "$INTERVAL" \
+#     --config configs/strategy.yaml \
+#     --features-config configs/features.yaml \
+#     --model-path "models/lstm/model.pth" \
+#     --scaler-path "models/lstm/scaler.pkl"
 
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ 모델 학습 실패${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ 모델 학습 완료${NC}"
+# if [ $? -ne 0 ]; then
+#     echo -e "${RED}❌ 모델 학습 실패${NC}"
+#     exit 1
+# fi
+# echo -e "${GREEN}✅ 모델 학습 완료${NC}"
 
 # 4. 백테스트 실행 (Out-of-Sample)
 echo -e "\n${BLUE}============================================================${NC}"
