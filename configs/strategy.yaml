@@ -1,0 +1,42 @@
+# 전략 설정
+strategy:
+  name: lstm  # lstm, sma_cross, rsi_threshold 등
+  
+  # LSTM 모델 설정
+  model:
+    type: lstm
+    input_size: auto  # feature 수에 따라 자동 계산
+    hidden_size: 128
+    num_layers: 2
+    dropout: 0.2
+    bidirectional: false
+    
+  # 학습 설정
+  training:
+    batch_size: 64
+    epochs: 100
+    learning_rate: 0.001
+    optimizer: adam
+    loss: bce  # binary cross entropy
+    early_stopping:
+      patience: 10
+      min_delta: 0.0001
+    scheduler:
+      type: reduce_on_plateau
+      factor: 0.5
+      patience: 5
+      
+  # 예측 설정
+  prediction:
+    horizon: 1  # 다음 1 bar 예측
+    target: direction  # direction (분류) 또는 return (회귀)
+    
+  # 신호 생성 규칙
+  signal_rules:
+    long_threshold: 0.55   # p > 0.55이면 Long
+    short_threshold: 0.45  # p < 0.45이면 Short
+    hold_zone: [0.45, 0.55]  # 이 구간에서는 Hold
+    confidence_filter: 0.0  # 최소 신뢰도 (0~1)
+    
+  # Warmup
+  warmup_period: 100  # 신호 생성 전 필요한 데이터 포인트

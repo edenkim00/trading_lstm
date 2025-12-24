@@ -1,0 +1,48 @@
+# Feature Engineering 설정
+features:
+  # 가격 변환
+  returns:
+    periods: [1, 5, 15]  # 수익률 계산 기간
+  
+  # 변동성
+  volatility:
+    windows: [10, 30]  # 롤링 윈도우
+    
+  # 기술적 지표
+  indicators:
+    - name: rsi
+      periods: [14]
+    - name: macd
+      fast: 12
+      slow: 26
+      signal: 9
+    - name: bbands
+      period: 20
+      std: 2
+    - name: obv
+    - name: atr
+      period: 14
+    - name: ema
+      periods: [9, 21, 50]
+  
+  # 볼륨 피처
+  volume_features:
+    - vwap
+    - volume_ratio  # current / rolling average
+    
+  # Scaling
+  scaler:
+    type: standard  # standard, minmax, robust
+    feature_range: [-1, 1]
+    
+  # LSTM 시퀀스 설정
+  sequence:
+    length: 100  # 과거 100개 바를 보고 예측
+    stride: 1    # 1 bar씩 이동
+    
+  # Train/Val/Test 분할
+  split:
+    train: 0.7
+    val: 0.15
+    test: 0.15
+    method: time_based  # 시간순 분할
