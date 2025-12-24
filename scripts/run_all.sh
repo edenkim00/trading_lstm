@@ -14,10 +14,10 @@ NC='\033[0m' # No Color
 
 # 기본값 설정
 SYMBOL=${1:-BTCUSDT}
-INTERVAL=${2:-4h}
-TRAIN_START=${3:-2021-01-01}
-TRAIN_END=${4:-2025-12-31}
-TEST_START=${5:-2024-01-01}
+INTERVAL=${2:-1h}
+TRAIN_START=${3:-2025-01-01}
+TRAIN_END=${4:-2025-10-31}
+TEST_START=${5:-2025-11-01}
 TEST_END=${6:-2025-12-30}
 
 echo -e "${BLUE}============================================================${NC}"

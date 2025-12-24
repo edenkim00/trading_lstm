@@ -57,8 +57,8 @@ def main():
     df = cache.load(
         args.symbol,
         args.interval,
-        start_date=backtest_config.get('start_date'),
-        end_date=backtest_config.get('end_date')
+        start_date=backtest_config['execution'].get('start_date'),
+        end_date=backtest_config['execution'].get('end_date')
     )
     
     if df is None or df.empty:

@@ -21,7 +21,8 @@ class ModelTrainer:
         model: nn.Module,
         device: str = 'cpu',
         learning_rate: float = 0.001,
-        optimizer_name: str = 'adam'
+        optimizer_name: str = 'adam',
+        loss_type: str = 'bce'
     ):
         """
         Args:
@@ -29,9 +30,11 @@ class ModelTrainer:
             device: 디바이스 (cpu, cuda)
             learning_rate: 학습률
             optimizer_name: 옵티마이저 (adam, sgd, rmsprop)
+            loss_type: 손실 함수 타입 (bce, mse)
         """
         self.model = model.to(device)
         self.device = device
+        self.loss_type = loss_type.lower()
         
         # Optimizer
         if optimizer_name.lower() == 'adam':
@@ -43,8 +46,13 @@ class ModelTrainer:
         else:
             raise ValueError(f"Unknown optimizer: {optimizer_name}")
         
-        # Loss function (Binary Cross Entropy)
-        self.criterion = nn.BCELoss()
+        # Loss function
+        if self.loss_type == 'bce':
+            self.criterion = nn.BCELoss()
+        elif self.loss_type == 'mse':
+            self.criterion = nn.MSELoss()
+        else:
+            raise ValueError(f"Unknown loss type: {loss_type}")
         
         # History
         self.history = {
@@ -76,7 +84,7 @@ class ModelTrainer:
         
         iterator = tqdm(train_loader, desc="Training") if verbose else train_loader
         
-        for batch_X, batch_y in iterator:
+        for batch_idx, (batch_X, batch_y) in enumerate(iterator):
             batch_X = batch_X.to(self.device)
             batch_y = batch_y.to(self.device)
             
@@ -91,12 +99,27 @@ class ModelTrainer:
             
             # Metrics
             total_loss += loss.item()
-            predictions = (outputs > 0.5).float()
-            correct += (predictions == batch_y).sum().item()
-            total += batch_y.size(0)
+            
+            # 분류인 경우에만 accuracy 계산
+            if self.loss_type == 'bce':
+                predictions = (outputs > 0.5).float()
+                correct += (predictions == batch_y).sum().item()
+                total += batch_y.size(0)
+            
+            # 진행 상황 업데이트
+            if verbose:
+                current_loss = total_loss / (batch_idx + 1)
+                if self.loss_type == 'bce':
+                    current_acc = correct / total if total > 0 else 0
+                    iterator.set_postfix({
+                        'loss': f'{current_loss:.4f}',
+                        'acc': f'{current_acc:.4f}'
+                    })
+                else:
+                    iterator.set_postfix({'loss': f'{current_loss:.4f}'})
         
         avg_loss = total_loss / len(train_loader)
-        accuracy = correct / total
+        accuracy = correct / total if self.loss_type == 'bce' else 0.0
         
         return avg_loss, accuracy
     
@@ -127,12 +150,15 @@ class ModelTrainer:
                 loss = self.criterion(outputs, batch_y)
                 
                 total_loss += loss.item()
-                predictions = (outputs > 0.5).float()
-                correct += (predictions == batch_y).sum().item()
-                total += batch_y.size(0)
+                
+                # 분류인 경우에만 accuracy 계산
+                if self.loss_type == 'bce':
+                    predictions = (outputs > 0.5).float()
+                    correct += (predictions == batch_y).sum().item()
+                    total += batch_y.size(0)
         
         avg_loss = total_loss / len(val_loader)
-        accuracy = correct / total
+        accuracy = correct / total if self.loss_type == 'bce' else 0.0
         
         return avg_loss, accuracy
     
@@ -168,7 +194,7 @@ class ModelTrainer:
         
         for epoch in range(1, epochs + 1):
             # Train
-            train_loss, train_acc = self.train_epoch(train_loader, verbose=False)
+            train_loss, train_acc = self.train_epoch(train_loader, verbose=True)
             
             # Validate
             val_loss, val_acc = self.validate(val_loader)
@@ -180,11 +206,17 @@ class ModelTrainer:
             self.history['val_acc'].append(val_acc)
             
             if verbose:
-                logger.info(
-                    f"Epoch {epoch}/{epochs} - "
-                    f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, "
-                    f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}"
-                )
+                if self.loss_type == 'bce':
+                    logger.info(
+                        f"Epoch {epoch}/{epochs} - "
+                        f"Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, "
+                        f"Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}"
+                    )
+                else:
+                    logger.info(
+                        f"Epoch {epoch}/{epochs} - "
+                        f"Train Loss: {train_loss:.6f}, Val Loss: {val_loss:.6f}"
+                    )
             
             # Early stopping 체크
             if val_loss < best_val_loss - early_stopping_min_delta:
@@ -230,8 +262,9 @@ class ModelTrainer:
 def predict(
     model: nn.Module,
     dataloader: DataLoader,
-    device: str = 'cpu'
-) -> Tuple[np.ndarray, np.ndarray]:
+    device: str = 'cpu',
+    is_regression: bool = False
+) -> np.ndarray:
     """
     모델 예측
     
@@ -239,12 +272,13 @@ def predict(
         model: PyTorch 모델
         dataloader: 데이터로더
         device: 디바이스
+        is_regression: 회귀 모드 여부
         
     Returns:
-        (predictions, probabilities)
+        predictions (분류: 0/1, 회귀: 실수값)
     """
     model.eval()
-    all_probs = []
+    all_outputs = []
     
     with torch.no_grad():
         for batch in dataloader:
@@ -256,9 +290,9 @@ def predict(
             batch_X = batch_X.to(device)
             outputs = model(batch_X)
             
-            all_probs.append(outputs.cpu().numpy())
+            all_outputs.append(outputs.cpu().numpy())
     
-    probs = np.concatenate(all_probs)
-    preds = (probs > 0.5).astype(int)
+    outputs = np.concatenate(all_outputs).flatten()
     
-    return preds, probs
+    # 회귀면 그대로, 분류면 확률값 반환
+    return outputs

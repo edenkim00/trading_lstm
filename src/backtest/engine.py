@@ -110,17 +110,25 @@ class BacktestEngine:
                     if current_position.side == 'long':
                         if price <= current_position.entry_price * (1 - self.stop_loss_pct):
                             should_exit = True
-                            logger.debug(f"Stop loss triggered at {price}")
+                            logger.debug(f"Long stop loss triggered at {price}")
+                    elif current_position.side == 'short':
+                        if price >= current_position.entry_price * (1 + self.stop_loss_pct):
+                            should_exit = True
+                            logger.debug(f"Short stop loss triggered at {price}")
                 
                 # 익절 체크
                 if self.take_profit_pct:
                     if current_position.side == 'long':
                         if price >= current_position.entry_price * (1 + self.take_profit_pct):
                             should_exit = True
-                            logger.debug(f"Take profit triggered at {price}")
+                            logger.debug(f"Long take profit triggered at {price}")
+                    elif current_position.side == 'short':
+                        if price <= current_position.entry_price * (1 - self.take_profit_pct):
+                            should_exit = True
+                            logger.debug(f"Short take profit triggered at {price}")
                 
                 # 청산
-                if should_exit or (signal_side == 'flat' and current_position.side == 'long'):
+                if should_exit or signal_side == 'flat':
                     exit_fee = self.execution_engine.execute_exit(
                         current_position,
                         timestamp,
@@ -131,7 +139,7 @@ class BacktestEngine:
                     current_position = None
             
             # 새 포지션 진입
-            if signal_side == 'long' and current_position is None:
+            if signal_side in ['long', 'short'] and current_position is None:
                 # 포지션 사이즈 계산
                 position_value = self._calculate_position_size(price)
                 position_size = position_value / price
@@ -141,14 +149,16 @@ class BacktestEngine:
                     trade = self.execution_engine.execute_entry(
                         timestamp,
                         price,
-                        'long',
+                        signal_side,
                         position_size
                     )
                     
                     # 포트폴리오에 추가
                     if self.portfolio.open_trade(trade):
                         current_position = trade
-                        self.portfolio.update_position('default', position_size, price)
+                        # 숏은 음수 사이즈로 표시
+                        position_qty = position_size if signal_side == 'long' else -position_size
+                        self.portfolio.update_position('default', position_qty, price)
         
         # 마지막 포지션 청산
         if current_position is not None:

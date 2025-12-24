@@ -34,7 +34,11 @@ Colab에서 새 노트북을 만들고 아래 명령어를 순서대로 실행:
 
 ### 2. 패키지 설치
 ```python
-!pip install -q -r requirements.txt
+# 개별 패키지 설치 (Colab 환경에서 더 안정적)
+!pip install python-binance ccxt pandas numpy pyarrow tables ta scikit-learn matplotlib seaborn plotly pydantic pydantic-settings PyYAML python-dotenv tqdm joblib torch torchvision
+
+# 또는 requirements.txt 사용
+# !pip install -r requirements.txt
 ```
 
 ### 3. 데이터 다운로드

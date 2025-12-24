@@ -20,7 +20,7 @@ backtest:
     risk_per_trade: 0.02  # 거래당 리스크 (자본의 2%)
     max_position_size: 1.0  # 최대 포지션 (자본의 100%)
     leverage: 1  # 레버리지
-    allow_short: false  # 공매도 허용 여부
+    allow_short: true  # 공매도 허용 여부
     
   # 리스크 관리
   risk_management:
@@ -45,8 +45,8 @@ backtest:
   # 백테스트 실행
   execution:
     mode: vectorized  # vectorized 또는 event_driven
-    start_date: "2024-04-01"  # 학습 기간 이후 (out-of-sample)
-    end_date: "2024-06-30"
+    start_date: "2024-01-01"
+    end_date: "2024-03-31"  # 실제 데이터 범위에 맞춤
     warmup_bars: 100  # 전략 준비 기간
     
   # 벤치마크

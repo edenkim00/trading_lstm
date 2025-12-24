@@ -43,6 +43,11 @@ class LSTMStrategy(Strategy):
         self.short_threshold = signal_rules.get('short_threshold', 0.45)
         self.confidence_filter = signal_rules.get('confidence_filter', 0.0)
         
+        # 예측 타입 (분류 vs 회귀)
+        prediction_config = self.config.get('prediction', {})
+        self.target_type = prediction_config.get('target', 'direction')  # direction or return
+        self.is_regression = (self.target_type == 'return')
+        
         # 시퀀스 설정
         self.sequence_length = self.config.get('warmup_period', 100)
         self.feature_columns = self.config.get('feature_columns', None)
@@ -135,7 +140,8 @@ class LSTMStrategy(Strategy):
             model=self.model,
             device=self.device,
             learning_rate=training_cfg.get('learning_rate', 0.001),
-            optimizer_name=training_cfg.get('optimizer', 'adam')
+            optimizer_name=training_cfg.get('optimizer', 'adam'),
+            loss_type=training_cfg.get('loss', 'bce')
         )
         
         history = trainer.fit(
@@ -183,22 +189,36 @@ class LSTMStrategy(Strategy):
         dataloader = DataLoader(dataset, batch_size=64, shuffle=False)
         
         # 예측
-        _, probabilities = predict(self.model, dataloader, self.device)
+        predictions = predict(self.model, dataloader, self.device, is_regression=self.is_regression)
         
         # 신호 생성
         signals = []
         
-        for i, (ts, prob) in enumerate(zip(timestamps, probabilities)):
+        for i, (ts, pred) in enumerate(zip(timestamps, predictions)):
             # 포지션 결정
-            if prob > self.long_threshold:
-                side = 'long'
-                confidence = prob
-            elif prob < self.short_threshold:
-                side = 'short'
-                confidence = 1 - prob
+            if self.is_regression:
+                # 회귀: 예상 수익률 기반
+                expected_return = float(pred)
+                if expected_return > self.long_threshold:
+                    side = 'long'
+                    confidence = abs(expected_return)
+                elif expected_return < self.short_threshold:
+                    side = 'short'
+                    confidence = abs(expected_return)
+                else:
+                    side = 'flat'
             else:
-                side = 'flat'
-                confidence = 0.5
+                # 분류: 확률 기반
+                prob = float(pred)
+                if prob > self.long_threshold:
+                    side = 'long'
+                    confidence = prob
+                elif prob < self.short_threshold:
+                    side = 'short'
+                    confidence = 1 - prob
+                else:
+                    side = 'flat'
+                    confidence = 0.5
             
             # 최소 신뢰도 필터
             if confidence < self.confidence_filter:
@@ -209,7 +229,7 @@ class LSTMStrategy(Strategy):
                 'side': side,
                 'size': 1.0 if side != 'flat' else 0.0,
                 'confidence': confidence,
-                'probability': prob
+                'prediction': float(pred)
             })
         
         signals_df = pd.DataFrame(signals)

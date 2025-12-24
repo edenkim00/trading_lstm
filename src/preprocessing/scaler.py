@@ -172,21 +172,44 @@ def split_data(
     train_ratio: float = 0.7,
     val_ratio: float = 0.15,
     test_ratio: float = 0.15,
-    time_based: bool = True
+    time_based: bool = True,
+    train_end_date: str = None,
+    val_end_date: str = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     데이터를 train/val/test로 분할
     
     Args:
         df: 데이터프레임
-        train_ratio: 학습 데이터 비율
-        val_ratio: 검증 데이터 비율
-        test_ratio: 테스트 데이터 비율
+        train_ratio: 학습 데이터 비율 (날짜 지정 안 할 경우)
+        val_ratio: 검증 데이터 비율 (날짜 지정 안 할 경우)
+        test_ratio: 테스트 데이터 비율 (날짜 지정 안 할 경우)
         time_based: 시간 기반 분할 (True) vs 랜덤 분할 (False)
+        train_end_date: 학습 데이터 종료 날짜 (YYYY-MM-DD)
+        val_end_date: 검증 데이터 종료 날짜 (YYYY-MM-DD)
         
     Returns:
         (train_df, val_df, test_df)
     """
+    # 날짜 기반 분할
+    if train_end_date is not None:
+        if 'timestamp' not in df.columns:
+            raise ValueError("timestamp column required for date-based split")
+        
+        train_df = df[df['timestamp'] < train_end_date].copy()
+        
+        if val_end_date is not None:
+            val_df = df[(df['timestamp'] >= train_end_date) & 
+                       (df['timestamp'] < val_end_date)].copy()
+            test_df = df[df['timestamp'] >= val_end_date].copy()
+        else:
+            # val_end_date 없으면 나머지를 val로
+            val_df = df[df['timestamp'] >= train_end_date].copy()
+            test_df = pd.DataFrame()
+        
+        return train_df, val_df, test_df
+    
+    # 비율 기반 분할
     assert abs(train_ratio + val_ratio + test_ratio - 1.0) < 1e-6, \
         "Ratios must sum to 1.0"
     
